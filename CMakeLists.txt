@@ -8,7 +8,7 @@ set(HEADER Headers/Game.h States/State.h States/MainMenuState.h Entities/Entity.
 
 set(SOURCE Source/main.cpp Source/Game.cpp States/State.cpp States/GameState.cpp  Entities/Entity.cpp
         States/MainMenuState.cpp Animation/Animation.cpp
-        Animation/BurstAnimation.cpp GUI/gui.cpp States/PlayState.cpp States/PlayState.h Source/Matrix.cpp Source/Matrix.h Source/BlockFigure.cpp Source/BlockFigure.h)
+        Animation/BurstAnimation.cpp GUI/gui.cpp States/PlayersMenuState.cpp States/PlayersMenuState.h Source/GameView.cpp Source/GameView.h Source/Matrix.cpp Source/Matrix.h Source/Tetramino.cpp Source/Tetramino.h)
 
 include_directories(Headers Source States Entities Fonts Images Animation GUI)
 

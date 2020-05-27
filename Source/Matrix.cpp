@@ -1,66 +1,78 @@
 //
-// Created by ivan on 21.05.20.
+// Created by ivan on 25.05.20.
 //
 
 #include "Matrix.h"
 
-
-Matrix::Matrix(uint height, uint width, sf::FloatRect rectView,
-		sf::RenderWindow * window)
+/// constructors/destructor
+Matrix::Matrix(sf::Vector2u windowSize, uint height, uint width, sf::Color matrixColor) :
+	height(height), width(width), color(matrixColor)
 {
-	this->initView(rectView);
-	this->setView(window);
-	this->initMatrixVariables(height, width,this->view->getSize());
+	this->initMatrix(windowSize);
 }
-
 Matrix::~Matrix()
 {
-	for (int i = 0; i < this->width; ++i)
-		delete [] matrixArrColor[i];
-	delete [] matrixArrColor;
-
-	for (int i = 0; i < this->width; ++i)
+	for (int i = 0; i < this->height; ++i)
 		delete [] matrixArr[i];
 	delete [] matrixArr;
 
+	for (int i = 0; i < this->height; ++i)
+		delete [] matrixArrColor[i];
+	delete [] matrixArrColor;
+
 	delete [] lines;
-	delete  view;
 }
 
-/// Initialisation
-void Matrix::initMatrixVariables(uint height, uint width, sf::Vector2f size)
+/// initialisation
+void Matrix::initMatrix(sf::Vector2u windowSize)
 {
-	this->height = height;
-	this->width = width;
-	this->blockHeight = size.x / height;
-	this->blockWidth = size.y / width;
+	this->blockHeight = windowSize.y / height;
+	this->blockWidth = windowSize.x / width;
 
 	/// lines
 	this->lines = new sf::VertexArray();
 
 	lines->setPrimitiveType(sf::Lines);
-	for (int i = 0; i < height; ++i)
+	for (int i = 0; i <= height; ++i)
 	{
 		sf::Vertex vertex1(sf::Vector2f(0,i * blockHeight));
-		sf::Vertex vertex2(sf::Vector2f(this->view->getSize().x, i * blockHeight));
+		sf::Vertex vertex2(sf::Vector2f(windowSize.x, i * blockHeight));
 		vertex1.color = sf::Color(89,118,114);
 		vertex2.color = sf::Color(60,94,89);
 		lines->append(vertex1);
 		lines->append(vertex2);
 	}
-	for (int i = 0; i < width; ++i)
+	for (int i = 0; i <= width; ++i)
 	{
 		sf::Vertex vertex1(sf::Vector2f(i * blockWidth,0));
-		sf::Vertex vertex2(sf::Vector2f(i * blockWidth, this->view->getSize().y));
+		sf::Vertex vertex2(sf::Vector2f(i * blockWidth, windowSize.y));
 		vertex1.color = sf::Color(89,118,114);
 		vertex2.color = sf::Color(60,94,89);
 		lines->append(vertex1);
 		lines->append(vertex2);
 	}
 
-	/// color : default color is sf::Color(136,201,199)
-	this->color = sf::Color(136,201,199);
+	/// matrix
+	this->matrixArr = new bool*[width];
+	for (int i = 0; i < width; ++i)
+		matrixArr[i] = new bool[height];
 
+	for (int i = 0; i < this->width; ++i)
+	{
+		for (int j = 0; j < this->height; ++j)
+			matrixArr[i][j] = false;
+	}
+
+	/// filling borders
+	for(int i = 0; i < this->width; i++)
+		matrixArr[i][this->height - 1] = true;
+	for (int i = 0; i < this->height; ++i)
+	{
+		matrixArr[0][i] = true;
+		matrixArr[this->width - 1][i] = true;
+	}
+
+	/// matrix arr color
 	matrixArrColor = new sf::Color*[width];
 	for (int j = 0; j < width; ++j)
 		matrixArrColor[j] = new sf::Color[height];
@@ -69,139 +81,116 @@ void Matrix::initMatrixVariables(uint height, uint width, sf::Vector2f size)
 		for (int j = 0; j < height; ++j)
 			matrixArrColor[i][j] = this->color;
 	}
+}
 
-	/// matrix Array
-	matrixArr = new bool*[width];
-	for (int j = 0; j < width; ++j)
-		matrixArr[j] = new bool[height];
-	for (int i = 0; i < width; ++i)
+void Matrix::renderLines(sf::RenderWindow *window)
+{
+	window->draw(*this->lines);
+}
+
+void Matrix::renderMatrix(sf::RenderWindow *window)
+{
+	for(int i = 0; i < this->width; i++)
 	{
-		for (int j = 0; j < height; ++j)
-			matrixArr[i][j] = false;
-	}
-
-}
-
-void Matrix::initView(sf::FloatRect flRect)
-{
-	this->view = new sf::View();
-	this->view->setViewport(flRect);
-}
-
-void Matrix::setView(sf::RenderWindow* window)
-{
-	window->setView(*this->view);
-}
-
-/// render
-void Matrix::render(sf::RenderTarget *target)
-{
-	this->renderMatrix(target);
-}
-
-void Matrix::renderMatrix(sf::RenderTarget *target)
-{
-	for(int i = 0; i < width;i++)
-	{
-		for (int j = 0; j < height; ++j)
+		for (int j = 0; j < this->height; ++j)
 		{
-			if(matrixArr[i][j])
-				this->renderBlock(target, i, j);
-			else
+			if(this->matrixArr[i][j])
 			{
-				sf::RectangleShape shape(sf::Vector2f(blockWidth,blockHeight));
-				shape.setFillColor(this->color);
-				shape.setPosition(float(i) * blockWidth,float(j) * blockHeight);
-				target->draw(shape);
+				this->renderBlock(window,i,j,matrixArrColor[i][j]);
 			}
 		}
 	}
-	target->draw(*lines);
 }
 
-void Matrix::renderBlock(sf::RenderTarget* target, int i, int j)
+void Matrix::renderTetromino(sf::RenderWindow *window, Tetromino *tetromino)
+{
+	for(auto& item : tetromino->figure)
+	{
+		this->renderBlock(window,item.first,item.second,tetromino->color);
+	}
+}
+
+void Matrix::renderProjection(sf::RenderWindow *window, Tetromino *tetromino)
+{
+	int i = 0;
+	bool ok = true;
+	while(ok)
+	{
+		for(auto& item : tetromino->figure)
+		{
+			if(this->matrixArr[item.first][item.second + i])
+			{
+				ok = false;
+				i -= 2;
+				break;
+			}
+		}
+		i++;
+	}
+	/// add projection color if you want
+	/// default projection color is sf::Color(245,243,188)
+	for(auto& item: tetromino->figure)
+	{
+		renderBlock(window,item.first,item.second + i,sf::Color(245,243,188));
+	}
+}
+
+void Matrix::renderBlock(sf::RenderWindow *window, int i, int j, sf::Color blockColor) const
 {
 	sf::RectangleShape shape(sf::Vector2f(blockWidth,blockHeight));
-	shape.setFillColor(this->matrixArrColor[i][j]);
+	shape.setFillColor(blockColor);
 	shape.setPosition(float(i) * blockWidth,float(j) * blockHeight);
-	target->draw(shape);
+	window->draw(shape);
 }
 
-void Matrix::renderBlockFigure(sf::RenderTarget* target,BlockFigure *figure)
+void Matrix::burnLine(int line)
 {
-	for(auto& item : figure->figure)
+	/// short animation maybe
+	for (int i = line; i > 0; --i)
 	{
-		sf::RectangleShape shape(sf::Vector2f(blockWidth,blockHeight));
-		shape.setFillColor(figure->color);
-		shape.setPosition(float(item.first) * blockWidth,float(item.second) * blockHeight);
-		target->draw(shape);
-	}
-}
-
-void Matrix::stopFigure(BlockFigure* figure)
-{
-	for(auto& item : figure->figure)
-	{
-		this->matrixArr[item.first][item.second] = true;
-		this->matrixArrColor[item.first][item.second] = figure->color;
-	}
-}
-
-void Matrix::update(const float &dt)
-{
-
-}
-
-void Matrix::showProjection()
-{
-
-}
-
-bool Matrix::canFall(BlockFigure* figure)
-{
-	for(auto item : figure->figure)
-	{
-		if(matrixArr[item.first][item.second + 1])
-			return false;
-	}
-	return true;
-}
-
-void Matrix::checkForRows()
-{
-	for(int i = 0; i < height;i++)
-	{
-		bool a = true;
 		for (int j = 0; j < width; ++j)
 		{
-			a = a && matrixArr[j][i];
-		}
-		if(a)
-		{
-			for(int j = i; j > 0; j--)
-			{
-				for(int k = 0; k < width; k++)
-				{
-					matrixArr[k][j] = matrixArr[k][j - 1];
-					matrixArrColor[k][j] = matrixArrColor[k][j - 1];
-				}
-			}
+			matrixArr[j][i] = matrixArr[j][i - 1];
 		}
 	}
 }
 
-bool Matrix::hasFirstRow()
+void Matrix::checkLines()
 {
-	for(int i = 0; i < width; i++)
+	for (int i = 0; i < this->height - 1; ++i)
 	{
-		if(this->matrixArr[i][0] == true)
+		bool isBurn = true;
+		for (int j = 1; j < this->width - 1; ++j)
+		{
+			if(!matrixArr[j][i])
+			{
+				isBurn = false;
+				break;
+			}
+		}
+		if(isBurn)
+			this->burnLine(i);
+	}
+}
+
+void Matrix::engrave(Tetromino *tetromino)
+{
+	for(auto& item: tetromino->figure)
+	{
+		this->matrixArr[item.first][item.second] = true;
+		this->matrixArrColor[item.first][item.second] = tetromino->color;
+	}
+}
+
+bool Matrix::checkFirstLine()
+{
+	for(int i = 1;i < width - 1;i ++)
+	{
+		if(this->matrixArr[i][0])
 			return true;
 	}
 	return false;
 }
-
-
-/// update
 
 
 

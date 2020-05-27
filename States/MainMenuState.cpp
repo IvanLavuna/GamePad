@@ -89,7 +89,7 @@ void MainMenuState::updateButtons()
 	/// new game
 	if(this->buttons["play"]->isPressed(this->mousePosView))
 	{
-		this->states->push(new GameState(this->window,this->states));
+		this->states->push(new PlayersMenuState(this->window,this->states));
 	}
 }
 

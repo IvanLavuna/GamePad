@@ -1,5 +1,5 @@
 //
-// Created by ivan on 21.05.20.
+// Created by ivan on 25.05.20.
 //
 ///		  1 2 3 4 5 6 7 8 ...
 /// 	  -------------------------------> x
@@ -12,63 +12,54 @@
 ///		7|
 ///		8|
 ///		 y
-
 #ifndef GAMEPAD_MATRIX_H
 #define GAMEPAD_MATRIX_H
 
-#include "BlockFigure.h"
+#include "Tetramino.h"
 
 class Matrix
 {
 private:
-	/// Initialisation
-	void initMatrixVariables(uint height,uint width,sf::Vector2f size);
-	void initView(sf::FloatRect flRect);
-	void setView(sf::RenderWindow* window);
+	friend class Tetromino;
 
-protected:
 	/// variables
-	uint height{};
-	uint width{};
-	uint blockWidth{};
-	uint blockHeight{};
+	uint height;
+	uint width;
+	uint blockWidth;
+	uint blockHeight;
 
-	/** change color in block or not**/
-	bool** matrixArr;
+	bool** matrixArr;	/** change color in block or not **/
 	sf::Color** matrixArrColor;
 	sf::VertexArray* lines;
-	sf::View* view;
 
-	/** block color **/
 	sf::Color color;
 
-public:
-	Matrix(uint height, uint width, sf::FloatRect rectView,
-		   sf::RenderWindow * window);
+	/// initialisation
+	void initMatrix(sf::Vector2u windowSize);
 
-	virtual ~Matrix();
+public:
+	explicit Matrix(sf::Vector2u windowSize, uint height = 20, uint width = 10,
+			sf::Color matrixColor = sf::Color(84,238,217));
+	~Matrix();
 
 	/// render
-	void renderMatrix(sf::RenderTarget* target = nullptr);
-	void render(sf::RenderTarget* target = nullptr);
-	void renderBlock(sf::RenderTarget* target,int i,int j);
-	void renderBlockFigure(sf::RenderTarget* target,BlockFigure* figure);
+	void renderLines(sf::RenderWindow* window);
+	void renderMatrix(sf::RenderWindow* window);
+	void renderTetromino(sf::RenderWindow* window,Tetromino* tetromino);
+	void renderProjection(sf::RenderWindow* window,Tetromino* tetromino);
+	void renderBlock(sf::RenderWindow* window,int i,int j,sf::Color blockColor = sf::Color(225,224,205)) const;
 
-	/// update
-	void update(const float& dt);
+	/// core
+	void burnLine(int line);
+	void checkLines(); /** checks all matrix for full line **/
+	sf::Color getColor(){return this->color;}
+	void engrave(Tetromino* tetromino);
+	bool checkFirstLine();
+	int getHeight() const{ return this->height;}
+	int getWidth() const{ return this->width;}
 
-	void showProjection();
-
-	int getHeight() const{return this->height;}
-	int getWidth() const { return this->width;}
-	void stopFigure(BlockFigure* figure);
-
-	bool canFall(BlockFigure* figure);
-	void checkForRows();
-	bool hasFirstRow();
-
-	friend class BlockFigure;
 };
+
 
 
 

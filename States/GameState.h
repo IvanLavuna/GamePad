@@ -5,19 +5,19 @@
 #ifndef GAMEPAD_GAMESTATE_H
 #define GAMEPAD_GAMESTATE_H
 #include "gui.h"
-#include "PlayState.h"
+#include "GameView.h"
 
 class GameState : public State
 {
 private:
 	/// variables
-	gui::GameBar* gameBar;
+	std::map<int,GameView*> games;
 
 	/// initialisation
-	void initGameBar();
 
 public:
-	explicit GameState(sf::RenderWindow* window,std::stack<State*>* states);
+	explicit GameState(sf::RenderWindow* window,std::stack<State*>* states,
+			uint players = 1);
 	~GameState() override;
 
 	/// update

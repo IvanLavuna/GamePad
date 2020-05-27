@@ -4,10 +4,8 @@
 
 #ifndef GAMEPAD_MAINMENUSTATE_H
 #define GAMEPAD_MAINMENUSTATE_H
-#include "State.h"
-#include "gui.h"
 #include "BurstAnimation.h"
-#include "GameState.h"
+#include "PlayersMenuState.h"
 
 class MainMenuState : public State
 {

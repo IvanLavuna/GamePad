@@ -83,7 +83,10 @@ void Game::update()
 	this->updateSFMLEvents();
 
 	if(!this->states.empty())
+	{
 		this->states.top()->update(dt);
+		this->states.top()->updateMousePositions();
+	}
 }
 
 void Game::render()
