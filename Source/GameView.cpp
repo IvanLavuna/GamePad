@@ -5,8 +5,9 @@
 #include "GameView.h"
 
 /// constructors/destructor
-GameView::GameView(sf::FloatRect viewRect,sf::RenderWindow* window):
-	lostState(false), window(window),timer(0)
+GameView::GameView(sf::FloatRect viewRect,sf::RenderWindow* window,
+				   std::string playerInputKeyboard,std::stack<State*>* states):
+	lostState(false), window(window), timer(0), states(states)
 {
 	this->view.setViewport(viewRect);
 	this->initColorPalette();
@@ -14,6 +15,9 @@ GameView::GameView(sf::FloatRect viewRect,sf::RenderWindow* window):
 	this->initGame();
 	this->initBackground();
 	this->initScore();
+	this->initSupportedKeys();
+	this->initKeyboardInput(playerInputKeyboard);
+	this->initButtons();
 }
 
 GameView::~GameView()
@@ -21,6 +25,7 @@ GameView::~GameView()
 	delete this->matrix;
 	delete this->curTetromino;
 	delete this->font;
+	delete this->goMenuBtn;
 }
 
 /// initialisation
@@ -38,7 +43,6 @@ void GameView::initScore()
 	{
 		std::cerr << "file ../Fonts/Amatic-Bold.ttf could not be opened" << std::endl;
 	}
-
 	score = 0;
 	scoreString.setString("score: " + std::to_string(score));
 	scoreString.setFont(*this->font);
@@ -79,6 +83,53 @@ void GameView::initColorPalette()
 	this->colors.emplace_back(153,0,76);
 }
 
+void GameView::initSupportedKeys()
+{
+	std::ifstream file("../Config/supportedKeys.init");
+	if(file.is_open())
+	{
+		int i = 0;
+		std::string key ;
+		while(file >> key)
+		{
+			this->supportedKeys[key] = i;
+			i++;
+		}
+		file.close();
+	}
+	else
+	{
+		std::cerr << "File ../Config/supportedKeys.init couldn't be opened.\n";
+	}
+}
+
+void GameView::initKeyboardInput(std::string playerInputKeyboard)
+{
+	std::ifstream file(playerInputKeyboard);
+	if(file.is_open())
+	{
+		std::string key;
+		std::string keyValue;
+		while(file >> key >> keyValue)
+		{
+			this->gameKeys[key] = supportedKeys[keyValue];
+		}
+		file.close();
+	}
+	else
+	{
+		std::cerr << "File ../Config/player1.init couldn't be opened." << std::endl;
+	}
+
+}
+
+void GameView::initButtons()
+{
+	this->goMenuBtn = new gui::Button(0,0,200,75,
+			"go menu",this->font,sf::Color(124,190,228),sf::Color(92,142,171),
+								   sf::Color(41,67,81));
+}
+
 /// update
 void GameView::update(const float &dt)
 {
@@ -90,38 +141,48 @@ void GameView::update(const float &dt)
 		this->updateTetromino(dt);
 		this->updateScore();
 	}
+	else
+	{
+		this->goMenuBtn->update(this->window->mapPixelToCoords(sf::Mouse::getPosition(*this->window)));
+		this->updateGoMenuBtnInput();
+	}
 }
 
 void GameView::updateInput()
 {
 	/// move left
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && this->timer > 0.15f
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key(this->gameKeys["MOVE_LEFT"]))
+	   && this->timer > 0.15f
 	   && this->curTetromino->canMoveLeft(this->matrix))
 	{
 		curTetromino->moveLeft();
 		timer = 0;
 	}
 	/// move right
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && this->timer > 0.15f
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key(this->gameKeys["MOVE_RIGHT"]))
+	   && this->timer > 0.15f
 	   && this->curTetromino->canMoveRight(this->matrix))
 	{
 		curTetromino->moveRight();
 		timer = 0;
 	}
 	/// move down
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && this->timer > 0.15f)
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key(this->gameKeys["MOVE_DOWN"]))
+		&& this->timer > 0.15f)
 	{
 		curTetromino->moveDown();
 		timer = 0;
 	}
 	/// rotate
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && this->timer > 0.15f)
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key(this->gameKeys["ROTATE"]))
+		&& this->timer > 0.15f)
 	{
 		curTetromino->RotateLeft();
 		timer = 0;
 	}
 	/// teleportate on projection
-	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space)&& this->timer > 0.20f)
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key(this->gameKeys["TELEPORTATE"]))
+		&& this->timer > 0.20f)
 	{
 		curTetromino->LandDown(this->matrix);
 		timer = 0;
@@ -154,6 +215,16 @@ void GameView::updateTimer(const float& dt)
 	this->timer += dt;
 }
 
+void GameView::updateGoMenuBtnInput()
+{
+	if(this->goMenuBtn->isPressed(this->window->mapPixelToCoords(sf::Mouse::getPosition(*this->window))))
+	{
+		this->endState();
+		this->states->pop();
+	}
+}
+
+
 /// render
 void GameView::render()
 {
@@ -175,9 +246,10 @@ void GameView::renderLostState()
 	this->matrix->renderMatrix(window);
 	this->matrix->renderLines(window);
 	this->matrix->renderTetromino(window, this->curTetromino);
-//	this->matrix->renderProjection(this->window, this->curTetromino);
 	this->window->draw(this->scoreString);
-
+	this->scoreString.setCharacterSize(300);
+	this->scoreString.setPosition(this->view.getSize().x/5.0,this->view.getSize().y/ 3.5);
+	this->goMenuBtn->render(this->window);
 }
 
 /// core
@@ -194,6 +266,14 @@ void GameView::checkLostState()
 {
 	this->lostState = this->matrix->checkFirstLine();
 }
+
+void GameView::endState()
+{
+	this->window->setView(window->getDefaultView());
+}
+
+
+
 
 
 

@@ -91,6 +91,16 @@ void MainMenuState::updateButtons()
 	{
 		this->states->push(new PlayersMenuState(this->window,this->states));
 	}
+	/// settings
+	if(this->buttons["settings"]->isPressed(this->mousePosView))
+	{
+		/// do setting stuff
+	}
+	/// exit
+	if(this->buttons["exit"]->isPressed(this->mousePosView))
+	{
+		this->window->close();
+	}
 }
 
 void MainMenuState::updateInput(const float &dt)

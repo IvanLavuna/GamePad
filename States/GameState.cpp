@@ -8,9 +8,11 @@
 GameState::GameState(sf::RenderWindow* window,std::stack<State*>* states, uint players)
 	: State(window,states)
 {
+	std::string fileNameStart("../Config/player"), fileNameEnd(".init");
 	for(int i = 0;i < players;i++)
 	{
-		this->games[i] = new GameView(sf::FloatRect(1.f/float(players) * float(i),0,1.f/float(players),1.f),window);
+		this->games[i] = new GameView(sf::FloatRect(1.f/float(players) * float(i),0,1.f/float(players),1.f),
+				window, fileNameStart + std::to_string(i + 1) + fileNameEnd,this->states);
 	}
 }
 

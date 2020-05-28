@@ -6,14 +6,18 @@
 #define GAMEPAD_GAMEVIEW_H
 
 #include "Matrix.h"
+#include "gui.h"
+#include <fstream>
 
 /** logic and game are defined all here **/
 class GameView
 {
 private:
 	/// variables
+	/// core
 	sf::View view;
 	sf::RenderWindow* window;
+	std::stack<State*>* states;
 
 	Matrix* matrix;
 	Tetromino* curTetromino;
@@ -27,8 +31,10 @@ private:
 
 	sf::RectangleShape background;
 	std::map<int,TetrominoType> tetroMap;
-	/** color palette **/
-	std::vector<sf::Color> colors;
+	std::vector<sf::Color> colors;	/** color palette **/
+	std::map<std::string,int> supportedKeys;
+	std::map<std::string,int> gameKeys;
+	gui::Button* goMenuBtn;
 
 	/// initialisation
 	void initGame();
@@ -36,8 +42,12 @@ private:
 	void initBackground();
 	void initTetroMap();
 	void initColorPalette();
+	void initKeyboardInput(std::string playerInputKeyboard);
+	void initSupportedKeys();
+	void initButtons();
 public:
-	GameView(sf::FloatRect viewRect,sf::RenderWindow* window);
+	GameView(sf::FloatRect viewRect, sf::RenderWindow* window,
+			std::string playerInputKeyboard,std::stack<State*>* states);
 	~GameView();
 
 	/// update
@@ -46,6 +56,7 @@ public:
 	void updateTetromino(const float& dt);
 	void updateScore();
 	void updateTimer(const float& dt);
+	void updateGoMenuBtnInput();
 
 	/// render
 	void render();
@@ -54,6 +65,7 @@ public:
 	/// core
 	void generateNewTetromino();
 	void checkLostState();
+	void endState();
 };
 
 
